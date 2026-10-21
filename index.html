@@ -374,6 +374,25 @@
       });
     }
 
+    // 좌표 → 지역 이름 (역지오코딩)
+    // Open-Meteo는 이 방향을 지원하지 않아서 BigDataCloud의 무료 API를 써요.
+    // 키는 필요 없고, '사용자 기기에서 위치를 받은 직후' 부르는 용도로 만들어진 API예요.
+    async function reverseGeocode(lat, lon) {
+      const params = new URLSearchParams({
+        latitude: lat,
+        longitude: lon,
+        localityLanguage: 'ko',
+      });
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`);
+      if (!res.ok) throw new Error(`역지오코딩 오류: ${res.status}`);
+      const data = await res.json();
+
+      // city가 비어 있는 경우가 있어서 locality로 대체해요
+      // 예: '성남시, 경기도'
+      const place = data.city || data.locality;
+      return [place, data.principalSubdivision].filter(Boolean).join(', ');
+    }
+
     // 도시 이름 → 좌표 (Open-Meteo 지오코딩 API, 키 필요 없음)
     async function searchCity(query) {
       const params = new URLSearchParams({
@@ -460,7 +479,7 @@
     //
     // 날씨 후보가 여러 개면 뽑을 때마다 하나를 무작위로 골라 A로 써요.
     const WEATHER_TYPES = {
-      clear:        ['fire', 'grass'],
+      clear:        ['grass'],
       clouds:       ['flying'],
       fog:          ['ghost', 'psychic'],
       drizzle:      ['bug'],
@@ -732,6 +751,15 @@
       gpsButton.setAttribute('aria-label', '현재 위치 찾는 중');
       try {
         const location = await getCurrentPosition();
+
+        // 지역 이름을 못 가져와도 날씨는 보여줘야 하니까 실패는 여기서 따로 잡아요
+        try {
+          const placeName = await reverseGeocode(location.lat, location.lon);
+          if (placeName) location.name = placeName;
+        } catch (err) {
+          console.warn('지역 이름을 못 가져왔어요:', err.message);
+        }
+
         selectLocation(location);
       } catch (err) {
         console.warn('위치를 못 가져왔어요:', err.message);
