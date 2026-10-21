@@ -233,6 +233,24 @@
     }
     .shiny[hidden] { display: none; }
 
+    /* 이로치 이름: 무지개 그라디언트를 글자 모양으로 잘라내고, 옆으로 흘러가게 */
+    .poke-name.rainbow {
+      background: linear-gradient(90deg,
+        #E53935, #FB8C00, #FDD835, #43A047, #1E88E5, #5E35B1, #D81B60, #E53935);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: rainbow-flow 2.5s linear infinite;
+    }
+    @keyframes rainbow-flow {
+      to { background-position: 200% center; }
+    }
+    /* 움직임을 줄이도록 설정한 사용자에게는 애니메이션 없이 무지개색만 */
+    @media (prefers-reduced-motion: reduce) {
+      .poke-name.rainbow { animation: none; }
+    }
+
     .types { display: flex; gap: 8px; min-height: 32px; }
     .type-badge {
       padding: 4px 14px;
@@ -675,15 +693,48 @@
     let currentDraw = null; // { weatherTypes: [...], tempType: '...' }
 
     // 포켓몬만 다시 그리기
+    // 이로치가 나오면 다시 뽑기 버튼을 잠깐 잠가요 (실수로 넘기지 않게)
+    const SHINY_LOCK_SECONDS = 3;
+    const REROLL_LABEL = '다시 뽑기';
+    let lockTimer = null;
+
+    function lockReroll(seconds) {
+      let left = seconds;
+      rerollButton.disabled = true;
+      rerollButton.textContent = `${left}초 후 다시 뽑기`;
+
+      // 1초마다 숫자를 줄이고, 0이 되면 풀어줘요
+      lockTimer = setInterval(() => {
+        left--;
+        if (left > 0) {
+          rerollButton.textContent = `${left}초 후 다시 뽑기`;
+        } else {
+          unlockReroll();
+        }
+      }, 1000);
+    }
+
+    function unlockReroll() {
+      clearInterval(lockTimer);
+      lockTimer = null;
+      rerollButton.disabled = false;
+      rerollButton.textContent = REROLL_LABEL;
+    }
+
     async function showPokemon(draw) {
       const typeA = randomItem(draw.weatherTypes);
       const typeB = draw.tempType;
+      let shiny = false;
+
+      // 잠금 중에 도시를 바꿔서 새로 뽑는 경우, 이전 카운트다운은 정리해요
+      if (lockTimer) unlockReroll();
 
       // 로딩 상태
       rerollButton.disabled = true;
       pImage.removeAttribute('src');
       pStatus.textContent = pokedexPromise ? '찾는 중...' : '도감 준비 중...';
       pName.innerHTML = '&nbsp;';
+      pName.classList.remove('rainbow');
       pJackpot.hidden = true;
       pShiny.hidden = true;
       renderTypes([]);
@@ -692,20 +743,22 @@
         const pokemon = await getRandomPokemon(typeA, typeB);
         console.log('뽑힌 포켓몬:', pokemon);
 
-        const shiny = rollShiny();
+        shiny = rollShiny();
         if (shiny) console.log('이로치 등장!');
 
         showSprite(pokemon.id, shiny ? `${pokemon.ko} (이로치)` : pokemon.ko, shiny);
         pShiny.hidden = !shiny;
         pStatus.textContent = '';
         pName.textContent = pokemon.ko;
+        pName.classList.toggle('rainbow', shiny); // 이로치면 무지개 이름
         pJackpot.hidden = !pokemon.jackpot;
         renderTypes(pokemon.types);
       } catch (err) {
         console.error(err);
         pStatus.textContent = '포켓몬을 찾지 못했어요';
       } finally {
-        rerollButton.disabled = false;
+        if (shiny) lockReroll(SHINY_LOCK_SECONDS);
+        else rerollButton.disabled = false;
       }
     }
 
