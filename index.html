@@ -219,6 +219,20 @@
     }
     .jackpot[hidden] { display: none; }
 
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .badges:not(:has(:not([hidden]))) { display: none; } /* 뱃지가 하나도 없으면 자리도 차지하지 않게 */
+
+    .shiny {
+      margin: 0;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #1F2328;
+      color: #FFD54A;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .shiny[hidden] { display: none; }
+
     .types { display: flex; gap: 8px; min-height: 32px; }
     .type-badge {
       padding: 4px 14px;
@@ -301,7 +315,10 @@
           <img id="p-image" alt="" />
           <span id="p-status"></span>
         </div>
-        <p id="p-jackpot" class="jackpot" hidden>복합 타입 잭팟!</p>
+        <div class="badges">
+          <p id="p-shiny" class="shiny" hidden>이로치 등장!</p>
+          <p id="p-jackpot" class="jackpot" hidden>복합 타입 잭팟!</p>
+        </div>
         <h2 id="p-name" class="poke-name">&nbsp;</h2>
         <div id="p-types" class="types"></div>
         <button type="button" id="reroll-button" class="btn-reroll">다시 뽑기</button>
@@ -320,6 +337,7 @@
     const pStatus = document.getElementById('p-status');
     const pName = document.getElementById('p-name');
     const pJackpot = document.getElementById('p-jackpot');
+    const pShiny = document.getElementById('p-shiny');
     const pTypes = document.getElementById('p-types');
     const rerollButton = document.getElementById('reroll-button');
 
@@ -583,19 +601,49 @@
       return { ...randomItem(pool), jackpot };
     }
 
+    // 이로치(색이 다른 포켓몬) 확률
+    // 주소 끝에 ?shiny 를 붙이면 테스트용으로 항상 이로치가 나와요
+    const SHINY_RATE = 0.01;
+    const FORCE_SHINY = new URLSearchParams(window.location.search).has('shiny');
+
+    function rollShiny() {
+      return FORCE_SHINY || Math.random() < SHINY_RATE;
+    }
+
     // 스프라이트 주소: 도감 번호만 있으면 만들 수 있어요
     const SPRITES = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
-    const animatedSprite = (id) => `${SPRITES}/other/showdown/${id}.gif`; // 움직이는 도트
-    const staticSprite = (id) => `${SPRITES}/${id}.png`;                  // 정지 도트
 
-    // 움직이는 GIF를 먼저 시도하고, 없으면(404) 정지 도트로 바꿔요
-    function showSprite(id, alt) {
+    // 시도할 이미지 주소를 순서대로 나열해요
+    //   이로치: 움직이는 이로치 → 정지 이로치 → (이로치 이미지가 없으면) 일반 이미지
+    //   일반:   움직이는 도트 → 정지 도트
+    function spriteUrls(id, shiny) {
+      const normal = [
+        `${SPRITES}/other/showdown/${id}.gif`,
+        `${SPRITES}/${id}.png`,
+      ];
+      if (!shiny) return normal;
+      return [
+        `${SPRITES}/other/showdown/shiny/${id}.gif`,
+        `${SPRITES}/shiny/${id}.png`,
+        ...normal,
+      ];
+    }
+
+    // 목록의 첫 주소부터 시도하고, 실패(404)하면 다음 주소로 넘어가요
+    function showSprite(id, alt, shiny) {
+      const urls = spriteUrls(id, shiny);
+      let index = 0;
+
       pImage.alt = alt;
       pImage.onerror = () => {
-        pImage.onerror = null; // 정지 도트도 없으면 여기서 멈춰요 (무한 반복 방지)
-        pImage.src = staticSprite(id);
+        index++;
+        if (index < urls.length) {
+          pImage.src = urls[index];
+        } else {
+          pImage.onerror = null; // 전부 실패하면 멈춰요 (무한 반복 방지)
+        }
       };
-      pImage.src = animatedSprite(id);
+      pImage.src = urls[0];
     }
 
     // ---------- 화면 그리기 ----------
@@ -637,13 +685,18 @@
       pStatus.textContent = pokedexPromise ? '찾는 중...' : '도감 준비 중...';
       pName.innerHTML = '&nbsp;';
       pJackpot.hidden = true;
+      pShiny.hidden = true;
       renderTypes([]);
 
       try {
         const pokemon = await getRandomPokemon(typeA, typeB);
         console.log('뽑힌 포켓몬:', pokemon);
 
-        showSprite(pokemon.id, pokemon.ko);
+        const shiny = rollShiny();
+        if (shiny) console.log('이로치 등장!');
+
+        showSprite(pokemon.id, shiny ? `${pokemon.ko} (이로치)` : pokemon.ko, shiny);
+        pShiny.hidden = !shiny;
         pStatus.textContent = '';
         pName.textContent = pokemon.ko;
         pJackpot.hidden = !pokemon.jackpot;
