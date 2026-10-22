@@ -1,0 +1,290 @@
+/* 7단계: CSS 변수
+   --bg, --accent는 날씨에 따라 JS가 바꿔요.
+   이 변수를 쓰는 모든 곳의 색이 한 번에 바뀌어요. */
+:root {
+  --bg: #FFF4E0;
+  --accent: #C2410C;
+  --text: #1F2328;
+  --muted: #4A515B;
+  --line: #C9CED6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.4s;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* 상단: 제목 + 검색 */
+.top {
+  display: flex;
+  flex-wrap: wrap;            /* 좁아지면 검색창이 아래 줄로 내려가요 */
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-family: 'Do Hyeon', sans-serif;
+  font-weight: 400;
+  font-size: 32px;
+}
+
+.search-area {
+  position: relative;         /* 검색 결과 목록의 기준 위치 */
+  flex: 0 1 440px;
+  min-width: 0;
+}
+
+.search { display: flex; gap: 8px; }
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #FFFFFF;
+  font: inherit;
+  font-size: 15px;
+}
+
+.btn-search {
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 검색 결과: 검색창 아래에 떠 있는 목록 */
+.results {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+.results:empty { display: none; }   /* 비어 있으면 숨기기 */
+.results li.msg { padding: 10px 12px; color: var(--muted); }
+.results button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.results button:hover { background: var(--bg); }
+
+/* 본문: 날씨 블록 + 포켓몬 블록 */
+.panels {
+  display: flex;
+  flex-wrap: wrap;            /* 화면이 좁으면 위아래로 쌓여요 */
+  gap: 24px;
+  align-items: stretch;       /* 두 블록 높이 맞추기 */
+}
+
+.weather-card {
+  flex: 1 1 360px;
+  min-width: 0;
+  padding: 40px;
+  border-radius: 32px;
+  background: var(--accent);
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: background 0.4s;
+}
+.weather-card p { margin: 0; }
+.location { font-size: 20px; font-weight: 500; }
+.temp {
+  font-family: 'Do Hyeon', sans-serif;
+  font-size: clamp(96px, 14vw, 160px); /* 화면 너비에 따라 96~160px */
+  line-height: 1;
+}
+.label {
+  font-family: 'Do Hyeon', sans-serif;
+  font-size: 56px;
+  line-height: 1.2;
+}
+.hint { margin-top: 12px !important; font-size: 17px; }
+.odds {
+  margin-top: 16px !important;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.pokemon-card {
+  flex: 1 1 420px;
+  min-width: 0;
+  padding: 40px;
+  border-radius: 32px;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.poke-image {
+  width: 300px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 28px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: background 0.4s;
+}
+.poke-image img {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  image-rendering: pixelated; /* 도트를 키워도 흐려지지 않게 */
+}
+.poke-image img:not([src]) { display: none; } /* 이미지 없을 땐 숨기기 */
+
+.poke-name {
+  margin: 0;
+  font-family: 'Do Hyeon', sans-serif;
+  font-weight: 400;
+  font-size: 44px;
+  text-align: center;
+}
+
+.legend {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+}
+.legend[hidden] { display: none; }
+
+.badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.badges:not(:has(:not([hidden]))) { display: none; } /* 뱃지가 하나도 없으면 자리도 차지하지 않게 */
+
+.shiny {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #1F2328;
+  color: #FFD54A;
+  font-size: 13px;
+  font-weight: 700;
+}
+.shiny[hidden] { display: none; }
+
+/* 이로치 이름: 무지개 그라디언트를 글자 모양으로 잘라내고, 옆으로 흘러가게 */
+.poke-name.rainbow {
+  background: linear-gradient(90deg,
+    #E53935, #FB8C00, #FDD835, #43A047, #1E88E5, #5E35B1, #D81B60, #E53935);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-flow 2.5s linear infinite;
+}
+@keyframes rainbow-flow {
+  to { background-position: 200% center; }
+}
+/* 움직임을 줄이도록 설정한 사용자에게는 애니메이션 없이 무지개색만 */
+@media (prefers-reduced-motion: reduce) {
+  .poke-name.rainbow { animation: none; }
+}
+
+.types { display: flex; gap: 8px; min-height: 32px; }
+.type-badge {
+  padding: 4px 14px;
+  border: 2px solid currentColor; /* 테두리를 글자색과 같게 */
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.btn-reroll {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled { opacity: 0.6; cursor: default; }
+
+/* 스크린 리더에게만 보이는 라벨 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 휴대폰 화면 */
+@media (max-width: 600px) {
+  .page { padding: 24px 16px; gap: 20px; }
+  .weather-card, .pokemon-card { padding: 28px; border-radius: 24px; }
+  .label { font-size: 40px; }
+  .poke-name { font-size: 36px; }
+}

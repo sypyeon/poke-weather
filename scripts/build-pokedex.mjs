@@ -1,5 +1,5 @@
-// 도감 데이터(pokedex.json) 만들기
-// 사용법: 이 폴더에서  node build-pokedex.mjs   (Node 18 이상)
+// 도감 데이터(public/pokedex.json) 만들기
+// 사용법: 프로젝트 폴더에서  npm run build:pokedex   (Node 18 이상)
 //
 // PokeAPI에 요청을 1,000번 정도 보내서 필요한 정보만 뽑아 파일 하나로 저장해요.
 // 한 번만 돌리면 되고, 새 포켓몬이 나왔을 때만 다시 돌리면 돼요.
@@ -14,6 +14,8 @@ const TYPES = [
 ];
 const FORM_LABELS = { alola: '알로라', galar: '가라르', hisui: '히스이', paldea: '팔데아' };
 const CONCURRENCY = 10;
+// 어느 폴더에서 실행해도 public/pokedex.json에 저장되게 이 파일 기준으로 경로를 잡아요
+const OUT_FILE = new URL('../public/pokedex.json', import.meta.url);
 
 // 실패하면 잠깐 쉬었다가 최대 3번 다시 시도
 async function getJSON(url, retries = 3) {
@@ -106,8 +108,8 @@ async function main() {
 
   // 한 줄에 한 마리씩 저장 → git에서 변경 내역 보기 편해요
   const text = '[\n' + pokedex.map((p) => JSON.stringify(p)).join(',\n') + '\n]\n';
-  await writeFile('pokedex.json', text);
-  console.log(`완료: ${pokedex.length}마리 → pokedex.json`);
+  await writeFile(OUT_FILE, text);
+  console.log(`완료: ${pokedex.length}마리 → public/pokedex.json`);
 }
 
 main().catch((err) => {

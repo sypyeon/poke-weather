@@ -1,0 +1,7 @@
+node_modules
+dist
+
+# 실행에 필요 없는 문서·로컬 설정
+CLAUDE.md
+docs/
+.claude/
