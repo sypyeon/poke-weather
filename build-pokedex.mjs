@@ -90,12 +90,15 @@ async function main() {
       if (types.length === 0) continue;
 
       const form = Object.keys(FORM_LABELS).find((key) => name.includes(`-${key}`));
-      pokedex.push({
+      const entry = {
         name,
         id: idFromUrl(variety.pokemon.url),
         ko: form ? `${ko} (${FORM_LABELS[form]}폼)` : ko,
         types,
-      });
+      };
+      // 전설·환상 포켓몬 표시 (앱에서 별도 이벤트로 뽑아요)
+      if (species.is_legendary || species.is_mythical) entry.legend = true;
+      pokedex.push(entry);
     }
   }
 
