@@ -40,6 +40,16 @@ export const HUMIDITY_RULES = {
   step: 10,
 };
 
+// 미세먼지 등급 (한국 기준, ㎍/㎥ 이하)
+// PM10과 PM2.5 등급이 다르면 더 나쁜 쪽을 써요 (통합 예보 방식)
+// 출처: https://mediahub.seoul.go.kr/archives/1214219
+export const AIR_GRADES = [
+  { grade: 'good',     label: '좋음',     pm10: 30,       pm25: 15 },
+  { grade: 'normal',   label: '보통',     pm10: 80,       pm25: 35 },
+  { grade: 'bad',      label: '나쁨',     pm10: 150,      pm25: 75 },
+  { grade: 'veryBad',  label: '매우나쁨', pm10: Infinity, pm25: Infinity },
+];
+
 // 묶음 크기 보정: 이 마릿수보다 적은 묶음은 그만큼 확률이 줄어요
 // (2마리짜리 묶음 → 확률 10%만 남음)
 export const FULL_BUCKET_SIZE = 20;

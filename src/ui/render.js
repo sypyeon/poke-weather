@@ -1,16 +1,27 @@
 // 화면 그리기: 날씨 카드, 포켓몬 카드
 
 import { toShares } from '../scoring/score.js';
+import { WEATHER_INFO, typeInfo, skyGradient, pokemonGradient } from './theme.js';
 
 // 화면 요소들 (모듈 스크립트는 HTML을 다 읽은 뒤에 실행돼서 바로 찾을 수 있어요)
 const $ = (id) => document.getElementById(id);
 
+const wCard = $('w-card');
 const wLocation = $('w-location');
+const wTime = $('w-time');
 const wTemp = $('w-temp');
 const wLabel = $('w-label');
-const wHint = $('w-hint');
+const wHilo = $('w-hilo');
+const wFeels = $('w-feels');
+const wHum = $('w-hum');
+const wPm = $('w-pm');
+const wPmValue = $('w-pm-value');
+const wWind = $('w-wind');
+const wBar = $('w-bar');
 const wOdds = $('w-odds');
+const wIcons = wCard.querySelectorAll('[data-icon]');
 
+const pCard = $('p-card');
 const pImage = $('p-image');
 const pStatus = $('p-status');
 const pName = $('p-name');
@@ -20,94 +31,92 @@ const pTypes = $('p-types');
 const rerollButton = $('reroll-button');
 
 const NBSP = ' '; // 빈 줄도 높이를 유지하게
-
-// 날씨 분류별 표시 이름과 테마 색(bg: 배경, accent: 날씨 블록)
-const WEATHER_INFO = {
-  clear:        { label: '맑음',   bg: '#FFF4E0', accent: '#C2410C' },
-  clouds:       { label: '흐림',   bg: '#EEF0F3', accent: '#5B6472' },
-  fog:          { label: '안개',   bg: '#F0EEF6', accent: '#5B4A8A' },
-  drizzle:      { label: '이슬비', bg: '#E6F4EE', accent: '#2F7D5B' },
-  rain:         { label: '비',     bg: '#E3F0FB', accent: '#1C6FB8' },
-  snow:         { label: '눈',     bg: '#EEF7FA', accent: '#22708C' },
-  thunderstorm: { label: '뇌우',   bg: '#FFF8D6', accent: '#8A6500' },
-};
-
-// 맑은 날 배경/블록 색 (현재 기온 기준)
-const CLEAR_THEMES = [
-  { below: 5,        bg: '#EAF4FB', accent: '#1F6C9E' },
-  { below: 15,       bg: '#F5F0E6', accent: '#7A5C2E' },
-  { below: 25,       bg: '#EEF6E4', accent: '#3F7A1F' },
-  { below: Infinity, bg: '#FFF4E0', accent: '#C2410C' },
-];
-
-// 타입 한국어 이름과 뱃지 색 (흰 배경에서 잘 읽히는 진한 색)
-const TYPE_INFO = {
-  normal:   { label: '노말',   color: '#5B6472' },
-  fire:     { label: '불꽃',   color: '#C2410C' },
-  water:    { label: '물',     color: '#1C6FB8' },
-  electric: { label: '전기',   color: '#8A6500' },
-  grass:    { label: '풀',     color: '#2F7D5B' },
-  ice:      { label: '얼음',   color: '#22708C' },
-  fighting: { label: '격투',   color: '#A02C2C' },
-  poison:   { label: '독',     color: '#7B3FA0' },
-  ground:   { label: '땅',     color: '#8A5A1F' },
-  flying:   { label: '비행',   color: '#5B5FA8' },
-  psychic:  { label: '에스퍼', color: '#B0306A' },
-  bug:      { label: '벌레',   color: '#5F7A12' },
-  rock:     { label: '바위',   color: '#7A6A3A' },
-  ghost:    { label: '고스트', color: '#5B4A8A' },
-  dragon:   { label: '드래곤', color: '#4B3FB5' },
-  dark:     { label: '악',     color: '#3F3A36' },
-  steel:    { label: '강철',   color: '#4F6470' },
-  fairy:    { label: '페어리', color: '#A63C7E' },
-};
-
-function typeLabel(type) {
-  return TYPE_INFO[type] ? TYPE_INFO[type].label : type;
-}
-
-// 날씨 테마 적용: CSS 변수만 바꾸면 배경, 블록, 버튼 색이 다 바뀌어요
-function applyTheme(theme) {
-  document.body.style.setProperty('--bg', theme.bg);
-  document.body.style.setProperty('--accent', theme.accent);
-}
-
-// 타입 비중 표시: '불꽃 47% · 풀 40% · 물 13%' (높은 순)
-function formatShares(scores) {
-  const shares = toShares(scores);
-  return Object.entries(shares)
-    .sort((a, b) => b[1] - a[1])
-    .map(([type, share]) => `${typeLabel(type)} ${Math.round(share * 100)}%`)
-    .join(' · ');
-}
+const EMPTY = '--';
 
 // ---------- 날씨 카드 ----------
 
-export function renderWeatherLoading(locationName) {
-  wLocation.textContent = locationName;
-  wTemp.textContent = '--°';
-  wLabel.textContent = '불러오는 중';
-  wHint.textContent = NBSP;
-  wOdds.textContent = NBSP;
+// 날씨 아이콘: 이름이 같은 것 하나만 보여줘요 (null이면 전부 숨김)
+// <svg>에는 .hidden 속성이 없어서 hidden 속성을 직접 붙였다 뗐다 해요
+function showIcon(name) {
+  for (const icon of wIcons) icon.toggleAttribute('hidden', icon.dataset.icon !== name);
 }
 
-// temp, humidity는 반올림한 값
-export function renderWeather({ category, temp, humidity, maxTemp, minTemp, scores }) {
+// 오늘 나타나는 타입: 비율 막대 + 범례 (높은 순)
+function renderOdds(scores) {
+  const shares = Object.entries(toShares(scores)).sort((a, b) => b[1] - a[1]);
+  const segments = [];
+  const items = [];
+
+  for (const [type, share] of shares) {
+    const info = typeInfo(type);
+    const pct = `${Math.round(share * 100)}%`;
+
+    const segment = document.createElement('div');
+    segment.style.width = `${share * 100}%`;
+    segment.style.background = info.light;
+    segments.push(segment);
+
+    const item = document.createElement('span');
+    const dot = document.createElement('span');
+    dot.className = 'odds-dot';
+    dot.style.background = info.light;
+    item.append(dot, `${info.label} ${pct}`);
+    items.push(item);
+  }
+
+  wBar.replaceChildren(...segments);
+  wOdds.replaceChildren(...items);
+}
+
+function renderAir(air) {
+  if (!air) {
+    wPm.textContent = EMPTY;
+    wPmValue.textContent = '';
+    return;
+  }
+  wPm.textContent = air.grade.label;
+  wPmValue.textContent = `PM10 ${Math.round(air.pm10)} · PM2.5 ${Math.round(air.pm25)}`;
+}
+
+export function renderWeatherLoading(locationName) {
+  wLocation.textContent = locationName;
+  wTime.textContent = '';
+  wTemp.textContent = '--°';
+  wLabel.textContent = '불러오는 중';
+  wHilo.textContent = NBSP;
+  wFeels.textContent = EMPTY;
+  wHum.textContent = EMPTY;
+  wWind.textContent = EMPTY;
+  renderAir(null);
+  wBar.replaceChildren();
+  wOdds.replaceChildren();
+  showIcon(null);
+}
+
+// temp, humidity는 반올림한 값 / air는 못 받았으면 null
+export function renderWeather({
+  category, isDay, time, temp, humidity, feelsLike, wind, maxTemp, minTemp, air, scores,
+}) {
   const info = WEATHER_INFO[category];
 
-  // 맑은 날은 기온에 따른 색, 나머지는 날씨 색
-  applyTheme(category === 'clear' ? CLEAR_THEMES.find((t) => temp < t.below) : info);
+  wCard.style.background = skyGradient(category, isDay);
+  // 맑은 밤에는 해 대신 달
+  showIcon(info.icon === 'sun' && !isDay ? 'moon' : info.icon);
 
+  wTime.textContent = `${isDay ? '낮' : '밤'} ${time}`;
   wTemp.textContent = `${temp}°`;
   wLabel.textContent = info.label;
-  wHint.textContent =
-    `최고 ${Math.round(maxTemp)}° · 최저 ${Math.round(minTemp)}° · 습도 ${humidity}%`;
-  wOdds.textContent = `타입 비중  ${formatShares(scores)}`;
+  wHilo.textContent = `최고 ${Math.round(maxTemp)}° · 최저 ${Math.round(minTemp)}°`;
+  wFeels.textContent = `${Math.round(feelsLike)}°`;
+  wHum.textContent = `${humidity}%`;
+  wWind.textContent = `${wind.toFixed(1)}m/s`;
+  renderAir(air);
+  renderOdds(scores);
 }
 
 export function renderWeatherError() {
   wLabel.textContent = '날씨 오류';
-  wHint.textContent = '날씨를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+  wHilo.textContent = '날씨를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
 // ---------- 포켓몬 카드 ----------
@@ -148,17 +157,17 @@ function showSprite(id, alt, shiny) {
   pImage.src = urls[0];
 }
 
-// 타입 뱃지 만들기
+// 타입 뱃지 만들기 (진한 타입색 알약)
 function renderTypes(types) {
-  pTypes.replaceChildren();
-  for (const type of types) {
-    const info = TYPE_INFO[type] || { label: type, color: '#5B6472' };
+  const badges = types.map((type) => {
+    const info = typeInfo(type);
     const badge = document.createElement('span');
     badge.className = 'type-badge';
     badge.textContent = info.label;
-    badge.style.color = info.color;
-    pTypes.appendChild(badge);
-  }
+    badge.style.background = info.dark;
+    return badge;
+  });
+  pTypes.replaceChildren(...badges);
 }
 
 export function renderPokemonLoading(message) {
@@ -173,6 +182,7 @@ export function renderPokemonLoading(message) {
 }
 
 export function renderPokemon(pokemon, shiny) {
+  pCard.style.background = pokemonGradient(pokemon.types);
   showSprite(pokemon.id, shiny ? `${pokemon.ko} (이로치)` : pokemon.ko, shiny);
   pShiny.hidden = !shiny;
   pStatus.textContent = '';

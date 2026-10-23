@@ -24,10 +24,11 @@ export async function getWeather(lat, lon) {
   const params = new URLSearchParams({
     latitude: lat,
     longitude: lon,
-    current: 'temperature_2m,relative_humidity_2m,weather_code,is_day',
+    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code,is_day',
     daily: 'temperature_2m_max,temperature_2m_min', // 오늘 최고/최저기온 (표시용)
+    wind_speed_unit: 'ms',                          // 바람은 m/s로
     forecast_days: 1,
-    timezone: 'auto',
+    timezone: 'auto',                               // current.time이 그 지역 시각으로 와요
   });
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
 
@@ -42,9 +43,28 @@ export async function getWeather(lat, lon) {
   return {
     temperature: data.current.temperature_2m,
     humidity: data.current.relative_humidity_2m,
+    feelsLike: data.current.apparent_temperature,
+    wind: data.current.wind_speed_10m,
     maxTemp: data.daily.temperature_2m_max[0],
     minTemp: data.daily.temperature_2m_min[0],
     code: data.current.weather_code,
     isDay: data.current.is_day === 1,
+    time: data.current.time.slice(11, 16), // '2026-10-23T14:15' → '14:15'
+  };
+}
+
+// Open-Meteo에서 현재 미세먼지 가져오기 (㎍/㎥)
+export async function getAirQuality(lat, lon) {
+  const params = new URLSearchParams({
+    latitude: lat,
+    longitude: lon,
+    current: 'pm10,pm2_5',
+  });
+  const res = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${params}`);
+  if (!res.ok) throw new Error(`미세먼지 API 오류: ${res.status}`);
+  const data = await res.json();
+  return {
+    pm10: data.current.pm10,
+    pm25: data.current.pm2_5,
   };
 }

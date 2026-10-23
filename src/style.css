@@ -1,12 +1,14 @@
-/* 7단계: CSS 변수
-   --bg, --accent는 날씨에 따라 JS가 바꿔요.
-   이 변수를 쓰는 모든 곳의 색이 한 번에 바뀌어요. */
+/* UI v2: 하늘 + 타입 그라데이션
+   날씨 카드와 포켓몬 카드의 배경은 JS가 그라데이션으로 바꿔요. */
 :root {
-  --bg: #FFF4E0;
-  --accent: #C2410C;
+  --page: #F2F4F7;
   --text: #1F2328;
   --muted: #4A515B;
   --line: #C9CED6;
+  --ink: #1F2328;                       /* 검색·다시 뽑기 버튼 */
+  --glass: rgba(255, 255, 255, 0.14);   /* 날씨 카드 안 타일 */
+  --panel: rgba(255, 255, 255, 0.9);    /* 포켓몬 카드 아래 판 */
+  --idle-card: #8A96A3;                 /* 불러오기 전 카드 색 */
 }
 
 * { box-sizing: border-box; }
@@ -14,22 +16,23 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--page);
   color: var(--text);
   font-family: 'Noto Sans KR', sans-serif;
-  transition: background 0.4s;
 }
+
+p { margin: 0; }
 
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 }
 
-/* 상단: 제목 + 검색 */
+/* ---------- 상단: 제목 + 검색 ---------- */
 .top {
   display: flex;
   flex-wrap: wrap;            /* 좁아지면 검색창이 아래 줄로 내려가요 */
@@ -40,9 +43,8 @@ body {
 
 h1 {
   margin: 0;
-  font-family: 'Do Hyeon', sans-serif;
-  font-weight: 400;
-  font-size: 32px;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .search-area {
@@ -70,7 +72,7 @@ h1 {
   padding: 0 18px;
   border: 0;
   border-radius: 22px;
-  background: var(--accent);
+  background: var(--ink);
   color: #FFFFFF;
   font: inherit;
   font-weight: 500;
@@ -118,114 +120,179 @@ h1 {
   text-align: left;
   cursor: pointer;
 }
-.results button:hover { background: var(--bg); }
+.results button:hover { background: var(--page); }
 
-/* 본문: 날씨 블록 + 포켓몬 블록 */
+/* ---------- 본문: 날씨 카드 + 포켓몬 카드 ---------- */
 .panels {
   display: flex;
   flex-wrap: wrap;            /* 화면이 좁으면 위아래로 쌓여요 */
-  gap: 24px;
-  align-items: stretch;       /* 두 블록 높이 맞추기 */
+  gap: 20px;
+  align-items: stretch;       /* 두 카드 높이 맞추기 */
 }
 
+/* 날씨 카드 */
 .weather-card {
-  flex: 1 1 360px;
+  flex: 1 1 380px;
   min-width: 0;
-  padding: 40px;
-  border-radius: 32px;
-  background: var(--accent);
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--idle-card);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  transition: background 0.4s;
-}
-.weather-card p { margin: 0; }
-.location { font-size: 20px; font-weight: 500; }
-.temp {
-  font-family: 'Do Hyeon', sans-serif;
-  font-size: clamp(96px, 14vw, 160px); /* 화면 너비에 따라 96~160px */
-  line-height: 1;
-}
-.label {
-  font-family: 'Do Hyeon', sans-serif;
-  font-size: 56px;
-  line-height: 1.2;
-}
-.hint { margin-top: 12px !important; font-size: 17px; }
-.odds {
-  margin-top: 16px !important;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.35);
-  font-size: 15px;
-  line-height: 1.6;
+  gap: 20px;
 }
 
-.pokemon-card {
-  flex: 1 1 420px;
-  min-width: 0;
-  padding: 40px;
-  border-radius: 32px;
-  background: #FFFFFF;
+.w-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 500;
+}
+.w-head svg { flex: 0 0 auto; }
+.w-time { margin-left: auto; font-size: 14px; font-weight: 400; white-space: nowrap; }
+
+.w-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.temp {
+  font-size: 104px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -4px;
+}
+.label { margin-top: 8px; font-size: 24px; font-weight: 500; }
+.hilo { margin-top: 4px; font-size: 15px; }
+
+.w-icon {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.w-icon svg { width: 88px; height: 88px; }
+.w-icon svg[data-icon="moon"] { width: 80px; height: 80px; }
+.w-icon svg[hidden] { display: none; }
+
+/* 2×2 정보 타일 */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--glass);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 2px;
+}
+.tile-name { font-size: 13px; }
+.tile-value { font-size: 20px; font-weight: 700; }
+.tile-sub { font-size: 12px; }
+
+/* 오늘 나타나는 타입: 비율 막대 + 범례 */
+.odds { padding: 14px; gap: 10px; }
+
+.odds-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  gap: 2px;
 }
 
-.poke-image {
-  width: 300px;
-  max-width: 100%;
-  aspect-ratio: 1;
+.odds-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+}
+.odds-legend span { display: flex; align-items: center; gap: 6px; }
+.odds-dot { width: 8px; height: 8px; border-radius: 4px; }
+
+/* 포켓몬 카드 */
+.pokemon-card {
+  flex: 1 1 380px;
+  min-width: 0;
+  min-height: 560px;
   border-radius: 28px;
-  background: var(--bg);
+  background: var(--idle-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.poke-stage {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
-  transition: background 0.4s;
+  padding: 32px;
 }
-.poke-image img {
-  width: 60%;
-  height: 60%;
+
+/* 스프라이트 뒤로 흰빛이 퍼지는 원 */
+.poke-glow {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poke-glow img {
+  width: 180px;
+  height: 180px;
   object-fit: contain;
   image-rendering: pixelated; /* 도트를 키워도 흐려지지 않게 */
 }
-.poke-image img:not([src]) { display: none; } /* 이미지 없을 땐 숨기기 */
+.poke-glow img:not([src]) { display: none; } /* 이미지 없을 땐 숨기기 */
+.poke-status { color: #FFFFFF; font-size: 14px; font-weight: 500; }
+
+.poke-panel {
+  margin: 0 16px 16px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.poke-caption { font-size: 13px; color: var(--muted); }
 
 .poke-name {
   margin: 0;
-  font-family: 'Do Hyeon', sans-serif;
-  font-weight: 400;
-  font-size: 44px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
   text-align: center;
 }
-
-.legend {
-  margin: 0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #FFFFFF;
-  font-size: 13px;
-  font-weight: 700;
-}
-.legend[hidden] { display: none; }
 
 .badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .badges:not(:has(:not([hidden]))) { display: none; } /* 뱃지가 하나도 없으면 자리도 차지하지 않게 */
 
-.shiny {
-  margin: 0;
+.shiny,
+.legend {
   padding: 4px 12px;
   border-radius: 999px;
-  background: #1F2328;
-  color: #FFD54A;
   font-size: 13px;
   font-weight: 700;
 }
-.shiny[hidden] { display: none; }
+.shiny { background: var(--ink); color: #FFD54A; }
+.legend { background: #B45309; color: #FFFFFF; }
+.shiny[hidden], .legend[hidden] { display: none; }
 
 /* 이로치 이름: 무지개 그라디언트를 글자 모양으로 잘라내고, 옆으로 흘러가게 */
 .poke-name.rainbow {
@@ -245,23 +312,22 @@ h1 {
   .poke-name.rainbow { animation: none; }
 }
 
-.types { display: flex; gap: 8px; min-height: 32px; }
+.types { display: flex; gap: 8px; min-height: 28px; }
 .type-badge {
   padding: 4px 14px;
-  border: 2px solid currentColor; /* 테두리를 글자색과 같게 */
-  border-radius: 8px;
+  border-radius: 999px;
+  color: #FFFFFF;
   font-size: 14px;
   font-weight: 700;
 }
 
 .btn-reroll {
-  margin-top: 8px;
   width: 100%;
   max-width: 320px;
-  height: 52px;
+  height: 50px;
   border: 0;
-  border-radius: 26px;
-  background: var(--accent);
+  border-radius: 25px;
+  background: var(--ink);
   color: #FFFFFF;
   font: inherit;
   font-size: 16px;
@@ -281,10 +347,33 @@ button:disabled { opacity: 0.6; cursor: default; }
   white-space: nowrap;
 }
 
-/* 휴대폰 화면 */
+/* 휴대폰 화면 (시안 V2 모바일) */
 @media (max-width: 600px) {
   .page { padding: 24px 16px; gap: 20px; }
-  .weather-card, .pokemon-card { padding: 28px; border-radius: 24px; }
-  .label { font-size: 40px; }
-  .poke-name { font-size: 36px; }
+  h1 { font-size: 24px; }
+  .search-area { flex: 1 1 300px; }
+  .panels { gap: 16px; }
+  .weather-card { padding: 24px; border-radius: 24px; gap: 18px; }
+  .w-head { font-size: 15px; }
+  .w-time { font-size: 13px; }
+  .temp { font-size: 88px; letter-spacing: -3px; }
+  .label { margin-top: 6px; font-size: 22px; }
+  .hilo { font-size: 14px; }
+  .w-icon { width: 80px; height: 80px; }
+  .w-icon svg { width: 72px; height: 72px; }
+  .w-icon svg[data-icon="moon"] { width: 66px; height: 66px; }
+  .tiles { gap: 8px; }
+  .tile { padding: 10px 12px; border-radius: 14px; }
+  .tile-name { font-size: 12px; }
+  .tile-value { font-size: 18px; }
+  .odds { padding: 12px; gap: 8px; }
+  .odds-bar { height: 8px; border-radius: 4px; }
+  .odds-legend { gap: 4px 12px; font-size: 12px; }
+  .pokemon-card { min-height: 500px; border-radius: 24px; }
+  .poke-stage { padding: 24px; }
+  .poke-glow { width: 210px; height: 210px; }
+  .poke-glow img { width: 160px; height: 160px; }
+  .poke-panel { margin: 0 12px 12px; padding: 18px; border-radius: 18px; gap: 10px; }
+  .poke-name { font-size: 28px; }
+  .btn-reroll { max-width: none; }
 }

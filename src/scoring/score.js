@@ -3,7 +3,13 @@
 // 날씨, 기온, 습도가 각각 타입에 점수를 줘요.
 // 점수를 다 더한 다음 비율(%)로 바꿔서 뽑기 확률로 써요.
 
-import { WEATHER_SCORES, TEMP_RULES, HUMIDITY_RULES } from './config.js';
+import { WEATHER_SCORES, TEMP_RULES, HUMIDITY_RULES, AIR_GRADES } from './config.js';
+
+// 미세먼지 등급: PM10, PM2.5 중 더 나쁜 쪽 (값은 반올림해서 비교)
+export function airGrade(pm10, pm25) {
+  const index = (key, value) => AIR_GRADES.findIndex((g) => Math.round(value) <= g[key]);
+  return AIR_GRADES[Math.max(index('pm10', pm10), index('pm25', pm25))];
+}
 
 // WMO 날씨 코드 → 우리 앱의 날씨 분류
 export function classifyWeather(code) {

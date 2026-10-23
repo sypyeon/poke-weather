@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>포켓몬 날씨</title>
 
-  <!-- 웹폰트: 큰 숫자/제목용 Do Hyeon, 본문용 Noto Sans KR -->
+  <!-- 웹폰트: Noto Sans KR (300은 큰 기온 숫자용) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" />
 </head>
 <body>
   <div class="page">
@@ -33,28 +33,79 @@
     </header>
 
     <main class="panels">
-      <!-- 날씨 블록 -->
-      <section class="weather-card" aria-live="polite">
-        <p id="w-location" class="location">&nbsp;</p>
-        <p id="w-temp" class="temp">--°</p>
-        <p id="w-label" class="label">불러오는 중</p>
-        <p id="w-hint" class="hint">&nbsp;</p>
-        <p id="w-odds" class="odds">&nbsp;</p>
+      <!-- 날씨 카드: 배경은 날씨·낮밤에 따라 JS가 바꿔요 -->
+      <section id="w-card" class="weather-card" aria-live="polite">
+        <div class="w-head">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path>
+            <circle cx="12" cy="9.5" r="2.5"></circle>
+          </svg>
+          <span id="w-location">&nbsp;</span>
+          <span id="w-time" class="w-time"></span>
+        </div>
+
+        <div class="w-main">
+          <div>
+            <p id="w-temp" class="temp">--°</p>
+            <p id="w-label" class="label">불러오는 중</p>
+            <p id="w-hilo" class="hilo">&nbsp;</p>
+          </div>
+          <!-- 날씨 아이콘: 해당하는 하나만 보여줘요 -->
+          <div class="w-icon">
+            <svg data-icon="sun" hidden viewBox="0 0 24 24" fill="none" stroke="#FFD54A" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="#FFD54A"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            <svg data-icon="moon" hidden viewBox="0 0 24 24" fill="#F3E6A8" stroke="none" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+            <svg data-icon="cloud" hidden viewBox="0 0 24 24" fill="#E8EEF4" stroke="none" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"></path></svg>
+            <svg data-icon="rain" hidden viewBox="0 0 24 24" fill="none" stroke-linecap="round" aria-hidden="true"><path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z" fill="#DCE5EE"></path><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#8EC5FF" stroke-width="1.8"></path></svg>
+            <svg data-icon="bolt" hidden viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 14h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 7a3.5 3.5 0 0 0 1 7z" fill="#C9CFDA"></path><path d="M13 13l-3 5h3l-2 4 5-6h-3l2-3z" fill="#FFD54A"></path></svg>
+            <svg data-icon="snow" hidden viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"></path></svg>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile">
+            <span class="tile-name">체감온도</span>
+            <span id="w-feels" class="tile-value">--</span>
+          </div>
+          <div class="tile">
+            <span class="tile-name">습도</span>
+            <span id="w-hum" class="tile-value">--</span>
+          </div>
+          <div class="tile">
+            <span class="tile-name">미세먼지</span>
+            <span id="w-pm" class="tile-value">--</span>
+            <span id="w-pm-value" class="tile-sub"></span>
+          </div>
+          <div class="tile">
+            <span class="tile-name">바람</span>
+            <span id="w-wind" class="tile-value">--</span>
+          </div>
+        </div>
+
+        <div class="tile odds">
+          <span class="tile-name">오늘 나타나는 타입</span>
+          <div id="w-bar" class="odds-bar"></div>
+          <div id="w-odds" class="odds-legend"></div>
+        </div>
       </section>
 
-      <!-- 포켓몬 블록 -->
-      <section class="pokemon-card" aria-live="polite">
-        <div class="poke-image">
-          <img id="p-image" alt="" />
-          <span id="p-status"></span>
+      <!-- 포켓몬 카드: 배경은 타입 색 그라데이션 -->
+      <section id="p-card" class="pokemon-card" aria-live="polite">
+        <div class="poke-stage">
+          <div class="poke-glow">
+            <img id="p-image" alt="" />
+            <span id="p-status" class="poke-status"></span>
+          </div>
         </div>
-        <div class="badges">
-          <p id="p-shiny" class="shiny" hidden>이로치 등장!</p>
-          <p id="p-legend" class="legend" hidden>전설 등장!</p>
+        <div class="poke-panel">
+          <p class="poke-caption">오늘 만난 포켓몬</p>
+          <div class="badges">
+            <p id="p-shiny" class="shiny" hidden>이로치 등장!</p>
+            <p id="p-legend" class="legend" hidden>전설 등장!</p>
+          </div>
+          <h2 id="p-name" class="poke-name">&nbsp;</h2>
+          <div id="p-types" class="types"></div>
+          <button type="button" id="reroll-button" class="btn-reroll">다시 뽑기</button>
         </div>
-        <h2 id="p-name" class="poke-name">&nbsp;</h2>
-        <div id="p-types" class="types"></div>
-        <button type="button" id="reroll-button" class="btn-reroll">다시 뽑기</button>
       </section>
     </main>
   </div>

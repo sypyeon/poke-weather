@@ -2,7 +2,7 @@
 // 실행: npm test
 
 import { describe, it, expect } from 'vitest';
-import { classifyWeather, humidityScores, calcTypeScores, toShares } from '../src/scoring/score.js';
+import { classifyWeather, humidityScores, calcTypeScores, toShares, airGrade } from '../src/scoring/score.js';
 import { bucketKey, buildBuckets, calcBucketWeights } from '../src/scoring/draw.js';
 
 // 테스트용 가짜 포켓몬 n마리
@@ -47,6 +47,19 @@ describe('calcTypeScores', () => {
 
   it('눈 -2°C 습도 30% → 얼음 13, 땅·바위 2', () => {
     expect(calcTypeScores('snow', -2, 30)).toEqual({ ice: 13, ground: 2, rock: 2 });
+  });
+});
+
+describe('airGrade', () => {
+  it('PM10, PM2.5 중 더 나쁜 등급', () => {
+    expect(airGrade(20, 10).grade).toBe('good');
+    expect(airGrade(20, 40).grade).toBe('bad');       // PM2.5가 더 나쁨
+    expect(airGrade(160, 10).grade).toBe('veryBad');  // PM10이 더 나쁨
+  });
+
+  it('경계값은 반올림 후 이하로 비교', () => {
+    expect(airGrade(30.4, 15.4).grade).toBe('good');
+    expect(airGrade(30.5, 0).grade).toBe('normal');
   });
 });
 

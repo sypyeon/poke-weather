@@ -3,8 +3,8 @@
 import './style.css';
 import { loadSavedLocation, saveLocation } from './storage.js';
 import { getCurrentPosition, reverseGeocode } from './api/place.js';
-import { getWeather, searchCity } from './api/weather.js';
-import { classifyWeather, calcTypeScores } from './scoring/score.js';
+import { getWeather, getAirQuality, searchCity } from './api/weather.js';
+import { classifyWeather, calcTypeScores, airGrade } from './scoring/score.js';
 import { pickPokemon, rollShiny } from './scoring/draw.js';
 import { getBuckets, isPokedexRequested } from './pokedex.js';
 import {
@@ -64,7 +64,15 @@ async function showWeatherAndPokemon(location) {
   renderWeatherLoading(location.name);
 
   try {
-    const weather = await getWeather(location.lat, location.lon);
+    // 날씨와 미세먼지를 동시에 요청해요.
+    // 미세먼지는 못 받아도 날씨는 보여줘야 하니까 실패하면 null로 둬요
+    const [weather, air] = await Promise.all([
+      getWeather(location.lat, location.lon),
+      getAirQuality(location.lat, location.lon).catch((err) => {
+        console.warn('미세먼지를 못 가져왔어요:', err.message);
+        return null;
+      }),
+    ]);
     const category = classifyWeather(weather.code);
     console.log(`날씨 코드 ${weather.code} → ${category}`);
 
@@ -75,10 +83,9 @@ async function showWeatherAndPokemon(location) {
     console.log('타입 점수:', scores);
 
     renderWeather({
-      category, temp, humidity,
-      maxTemp: weather.maxTemp,
-      minTemp: weather.minTemp,
-      scores,
+      ...weather,
+      category, temp, humidity, scores,
+      air: air && { ...air, grade: airGrade(air.pm10, air.pm25) },
     });
 
     currentScores = scores;
